@@ -1,0 +1,195 @@
+@import "tailwindcss";
+
+/* Sistema visual de Café Apante: fondo blanco hueso, tinta café y acento caramelo. */
+@theme {
+  --font-sans: "Source Sans 3 Variable", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Fraunces Variable", Georgia, "Times New Roman", serif;
+
+  --color-hueso-50: #fdfbf7;
+  --color-hueso-100: #f8f4ec;
+  --color-hueso-200: #f0e9dc;
+  --color-hueso-300: #e3d9c7;
+  --color-hueso-400: #cfc2ab;
+
+  --color-cafe-300: #bbaa9e;
+  --color-cafe-400: #857062;
+  --color-cafe-500: #7a6253;
+  --color-cafe-600: #5e4739;
+  --color-cafe-700: #463328;
+  --color-cafe-800: #33241b;
+  --color-cafe-900: #261a14;
+  --color-cafe-950: #1c130e;
+
+  --color-caramelo-50: #fbf4ea;
+  --color-caramelo-100: #f5e4ce;
+  --color-caramelo-200: #ebcba3;
+  --color-caramelo-400: #cc8a45;
+  --color-caramelo-500: #b8702a;
+  --color-caramelo-600: #9c5a1c;
+  --color-caramelo-700: #7f4715;
+
+  /* Colores de estado: reservados para el semáforo y los avisos, siempre con ícono y texto. */
+  --color-hoja-50: #edf5f0;
+  --color-hoja-100: #d9eadf;
+  --color-hoja-600: #2f6f55;
+  --color-hoja-700: #255a45;
+  --color-hoja-800: #1d4737;
+  --color-alerta-50: #fff6dd;
+  --color-alerta-100: #fce9b2;
+  --color-alerta-600: #a36b00;
+  --color-alerta-700: #7d5200;
+  --color-peligro-50: #fcedea;
+  --color-peligro-100: #f8d5cf;
+  --color-peligro-600: #b3301f;
+  --color-peligro-700: #93261a;
+  --color-info-50: #eef3f8;
+  --color-info-100: #d9e5f0;
+  --color-info-700: #2c5378;
+
+  --shadow-tarjeta: 0 1px 2px rgb(38 26 20 / 0.05), 0 4px 16px -8px rgb(38 26 20 / 0.12);
+  --shadow-flotante: 0 12px 40px -12px rgb(38 26 20 / 0.35);
+}
+
+/* Letra base más grande de lo habitual: el sistema lo usan personas mayores. */
+html {
+  font-size: 18px;
+  -webkit-text-size-adjust: 100%;
+}
+html.letra-grande {
+  font-size: 20.5px;
+}
+
+@layer base {
+  body {
+    @apply bg-hueso-100 font-sans text-cafe-900 antialiased;
+    font-feature-settings: "tnum" 1; /* cifras alineadas en tablas y totales */
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display;
+    font-variation-settings: "opsz" 40, "SOFT" 50;
+    letter-spacing: -0.01em;
+  }
+}
+
+/* Barras de desplazamiento discretas, a tono con el fondo. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-cafe-300) transparent;
+}
+
+/* Foco siempre visible para quien navega con teclado. */
+:focus-visible {
+  outline: 3px solid var(--color-caramelo-500);
+  outline-offset: 2px;
+}
+
+@layer components {
+  .control {
+    @apply block min-h-13 w-full rounded-xl border border-hueso-400 bg-white px-4 text-base text-cafe-900 shadow-sm transition
+      placeholder:text-cafe-400 hover:border-cafe-400
+      focus:border-caramelo-500 focus:outline-none focus:ring-4 focus:ring-caramelo-200/70
+      disabled:cursor-not-allowed disabled:bg-hueso-200 disabled:text-cafe-500;
+  }
+  textarea.control {
+    @apply py-3;
+  }
+  .tabla {
+    @apply w-full border-collapse text-left;
+  }
+  .tabla th {
+    @apply border-b border-hueso-300 px-3.5 py-3 text-sm font-semibold uppercase tracking-wide text-cafe-500;
+  }
+  .tabla td {
+    @apply border-b border-hueso-200 px-3.5 py-3.5 align-middle;
+  }
+  .tabla tbody tr:last-child td {
+    @apply border-b-0;
+  }
+  .tabla .num {
+    @apply text-right tabular-nums whitespace-nowrap;
+  }
+}
+
+/* Los textos solo para lectores de pantalla (sr-only) van en posición absoluta: sin esto,
+   dentro de una tabla desplazable ensanchan toda la página en el celular. */
+.overflow-x-auto,
+.overflow-auto {
+  position: relative;
+}
+
+/* Entradas numéricas sin flechitas: confunden y cambian el valor al girar la rueda. */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+@keyframes aparecer {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.aparecer {
+  animation: aparecer 0.22s ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .aparecer {
+    animation: none;
+  }
+}
+
+/* Impresión: solo sale el comprobante, una vez, en ancho de tiquetera (también cabe en carta).
+   Todo lo demás se quita del flujo (display: none); si solo se ocultara, seguiría ocupando
+   páginas y el comprobante se repetiría en cada una. */
+@media print {
+  @page {
+    margin: 6mm;
+  }
+  html {
+    font-size: 12px !important;
+  }
+  html,
+  body {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+  body *:not(.imprimible, .imprimible *, :has(.imprimible)) {
+    display: none !important;
+  }
+  /* Los contenedores que envuelven al comprobante (ventana, fondo, tarjeta) quedan como bloques planos. */
+  body *:has(.imprimible) {
+    position: static !important;
+    display: block !important;
+    width: auto !important;
+    max-width: none !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    overflow: visible !important;
+    background: none !important;
+    box-shadow: none !important;
+    transform: none !important;
+    animation: none !important;
+  }
+  .imprimible {
+    width: 76mm;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    color: #000 !important;
+  }
+}
