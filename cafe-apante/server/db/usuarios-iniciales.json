@@ -1,0 +1,5 @@
+[
+  { "nombre": "Dueño / Administrador", "usuario": "admin", "rol": "ADMIN" },
+  { "nombre": "Gerente de Ventas", "usuario": "ventas", "rol": "VENTAS" },
+  { "nombre": "Responsable de Producción", "usuario": "produccion", "rol": "PRODUCCION" }
+]
