@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+# Secreto que firma las sesiones: se genera solo en cada instalación.
+server/.secreto
+*.bak
+# Contraseñas temporales generadas en la instalación.
+contrasenas-iniciales*.txt

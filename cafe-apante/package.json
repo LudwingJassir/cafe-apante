@@ -1,0 +1,42 @@
+{
+  "name": "cafe-apante",
+  "version": "1.0.0",
+  "description": "Sistema de Caja e Inventario - Café Apante",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -n api,web -c yellow,cyan \"node --watch server/index.js\" \"vite\"",
+    "build": "vite build",
+    "start": "node server/index.js",
+    "db:init": "node server/db/init.js",
+    "db:demo": "node server/db/cargar-demo.js",
+    "demo": "node server/abrir-demo.js",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@fontsource-variable/fraunces": "^5.3.0",
+    "@fontsource-variable/source-sans-3": "^5.3.0",
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
+    "express": "^5.2.1",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "lucide-react": "^1.52.0",
+    "msnodesqlv8": "^5.5.0",
+    "mssql": "^12.7.4",
+    "qrcode": "^1.5.4",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-router-dom": "^7.18.4",
+    "recharts": "^3.10.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@vitejs/plugin-react": "^6.1.2",
+    "concurrently": "^10.0.5",
+    "tailwindcss": "^4.3.3",
+    "vite": "^8.3.2",
+    "vitest": "^5.0.3"
+  }
+}
