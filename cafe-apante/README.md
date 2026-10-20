@@ -36,6 +36,7 @@ controlador *ODBC Driver 18 for SQL Server*. La base de datos `CafeApante` se cr
 | RF02 Entrada de café y ajuste de mermas | *Inventario*: entrada por lote, merma con motivo, ajuste por conteo físico, historial |
 | RF03 Alerta de stock bajo | Semáforo (verde / amarillo / rojo) y panel de *Notificaciones* (stock medio, bajo y agotado) |
 | RF04 Registrar venta | *Caja*: efectivo en córdobas o dólares (vuelto en córdobas) y depósito con QR de la cuenta; el depósito exige anotar su número de referencia |
+| Arqueo y cierre de caja | *Arqueo de caja*: conteo billete por billete (córdobas: billetes de C$ 10 a C$ 1,000 y monedas de 10 centavos a C$ 10; dólares: billetes de US$ 1 a US$ 100) o escribiendo el total; el desglose queda guardado en cada cierre |
 | RF05 Factura y parámetros tributarios | Comprobante imprimible con IVA desglosado; tasas editables en *Configuración → Impuestos* |
 | RF06 Registrar cliente | *Clientes*: Grandes (precio mayorista) y Pequeños, con historial y hábitos de compra |
 | RF07 Dashboard interactivo | *Dashboard*: ventas por día y por mes, más vendidos, clientes, formas de pago, inventario |

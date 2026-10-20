@@ -186,3 +186,51 @@ export function calcularArqueo({ montoInicial, efectivoNIO, vueltoPorUSD, recibi
 export function proyectarCierre({ acumulado, ritmoDiario, diasRestantes }) {
   return redondear(Number(acumulado) + Number(ritmoDiario) * Math.max(Number(diasRestantes), 0));
 }
+
+/**
+ * Billetes y monedas en circulación que se cuentan al cerrar la caja.
+ * El C$ 10 existe como billete y como moneda: se cuentan por separado.
+ * En dólares solo se reciben billetes.
+ */
+export const DENOMINACIONES = {
+  NIO: [
+    { id: 'B1000', valor: 1000, tipo: 'BILLETE' },
+    { id: 'B500', valor: 500, tipo: 'BILLETE' },
+    { id: 'B200', valor: 200, tipo: 'BILLETE' },
+    { id: 'B100', valor: 100, tipo: 'BILLETE' },
+    { id: 'B50', valor: 50, tipo: 'BILLETE' },
+    { id: 'B20', valor: 20, tipo: 'BILLETE' },
+    { id: 'B10', valor: 10, tipo: 'BILLETE' },
+    { id: 'M10', valor: 10, tipo: 'MONEDA' },
+    { id: 'M5', valor: 5, tipo: 'MONEDA' },
+    { id: 'M1', valor: 1, tipo: 'MONEDA' },
+    { id: 'M0.50', valor: 0.5, tipo: 'MONEDA' },
+    { id: 'M0.25', valor: 0.25, tipo: 'MONEDA' },
+    { id: 'M0.10', valor: 0.1, tipo: 'MONEDA' },
+  ],
+  USD: [
+    { id: 'B100', valor: 100, tipo: 'BILLETE' },
+    { id: 'B50', valor: 50, tipo: 'BILLETE' },
+    { id: 'B20', valor: 20, tipo: 'BILLETE' },
+    { id: 'B10', valor: 10, tipo: 'BILLETE' },
+    { id: 'B5', valor: 5, tipo: 'BILLETE' },
+    { id: 'B2', valor: 2, tipo: 'BILLETE' },
+    { id: 'B1', valor: 1, tipo: 'BILLETE' },
+  ],
+};
+
+/** Suma un conteo por denominación ({ B200: 3, M5: 4 }) de una moneda. Ignora cantidades no válidas. */
+export function totalDesglose(moneda, conteo = {}) {
+  const total = DENOMINACIONES[moneda].reduce((suma, d) => {
+    const cantidad = Number(conteo?.[d.id]);
+    return Number.isInteger(cantidad) && cantidad > 0 ? suma + d.valor * cantidad : suma;
+  }, 0);
+  return redondear(total);
+}
+
+/** Deja solo las denominaciones contadas (cantidad mayor que cero), en el orden de la lista. */
+export function limpiarDesglose(moneda, conteo = {}) {
+  return Object.fromEntries(
+    DENOMINACIONES[moneda].filter((d) => Number.isInteger(Number(conteo?.[d.id])) && Number(conteo[d.id]) > 0).map((d) => [d.id, Number(conteo[d.id])]),
+  );
+}

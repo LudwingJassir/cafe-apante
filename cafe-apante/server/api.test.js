@@ -392,3 +392,31 @@ describe('tareas automáticas', () => {
     expect(await automaticos()).toBe(1);
   }, 60000);
 });
+
+describe('cierre de caja contado por billetes y monedas', () => {
+  it('rechaza denominaciones inexistentes y cantidades no enteras', async () => {
+    const inventada = await api('POST', '/caja/cerrar', { como: 'admin', cuerpo: { desglose: { NIO: { B300: 1 } } } });
+    expect(inventada.estado).toBe(400);
+    const fraccion = await api('POST', '/caja/cerrar', { como: 'admin', cuerpo: { desglose: { NIO: { B50: 1.5 } } } });
+    expect(fraccion.estado).toBe(400);
+    const monedaDolar = await api('POST', '/caja/cerrar', { como: 'admin', cuerpo: { desglose: { USD: { M1: 2 } } } });
+    expect(monedaDolar.estado).toBe(400);
+    const nada = await api('POST', '/caja/cerrar', { como: 'admin', cuerpo: {} });
+    expect(nada.estado).toBe(400);
+  });
+
+  it('calcula el total desde el desglose, ignora el total del navegador y lo guarda en el historial', async () => {
+    // La caja abierta espera C$ 55 (fondo 400 − devolución 345) y US$ 0.
+    const r = await api('POST', '/caja/cerrar', {
+      como: 'admin',
+      cuerpo: { contadoNIO: 9999, desglose: { NIO: { B50: 1, M5: 1, B100: 0 }, USD: {} }, observacion: 'Contado billete por billete' },
+    });
+    expect(r.estado).toBe(200);
+    expect(r.datos.arqueo.diferenciaNIO).toBe(0);
+    expect(r.datos.desglose).toEqual({ NIO: { B50: 1, M5: 1 }, USD: {} });
+
+    const [ultima] = (await api('GET', '/caja/sesiones', { como: 'admin' })).datos;
+    expect(ultima.contadoNIO).toBe(55);
+    expect(ultima.desglose).toEqual({ NIO: { B50: 1, M5: 1 }, USD: {} });
+  });
+});
