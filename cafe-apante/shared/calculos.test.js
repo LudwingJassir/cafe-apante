@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   calcularArqueo,
+  limpiarDesglose,
+  totalDesglose,
   calcularIRAnual,
   calcularVenta,
   calcularVuelto,
@@ -296,5 +298,30 @@ describe('casos límite', () => {
   it('el arqueo descuenta el dinero devuelto por anular ventas de cajas anteriores', () => {
     const r = calcularArqueo({ montoInicial: 500, efectivoNIO: 1000, vueltoPorUSD: 0, recibidoUSD: 0, devolucionesNIO: 345 });
     expect(r.esperadoNIO).toBe(1155);
+  });
+});
+
+describe('conteo de la caja por billetes y monedas', () => {
+  it('suma billetes y monedas de córdobas, incluidos los centavos', () => {
+    expect(totalDesglose('NIO', { B1000: 1, B200: 3, B50: 1, M10: 2, M1: 4, 'M0.25': 3, 'M0.10': 1 })).toBe(1674.85);
+  });
+
+  it('distingue el billete y la moneda de C$ 10', () => {
+    expect(totalDesglose('NIO', { B10: 2, M10: 3 })).toBe(50);
+  });
+
+  it('suma billetes de dólar y no acepta monedas de dólar', () => {
+    expect(totalDesglose('USD', { B20: 2, B1: 3 })).toBe(43);
+    expect(totalDesglose('USD', { M1: 5 })).toBe(0);
+  });
+
+  it('ignora cantidades negativas, decimales o vacías', () => {
+    expect(totalDesglose('NIO', { B100: -2, B50: 1.5, B20: '', B10: 1 })).toBe(10);
+    expect(totalDesglose('NIO', {})).toBe(0);
+    expect(totalDesglose('NIO')).toBe(0);
+  });
+
+  it('limpia el conteo dejando solo lo contado', () => {
+    expect(limpiarDesglose('NIO', { B200: 3, B100: 0, M5: 2, X: 9 })).toEqual({ B200: 3, M5: 2 });
   });
 });

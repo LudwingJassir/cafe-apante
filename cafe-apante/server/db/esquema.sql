@@ -286,3 +286,9 @@ BEGIN
   CREATE INDEX IX_Bitacora_fecha ON dbo.Bitacora(fecha DESC);
 END
 GO
+
+-- Conteo del cierre de caja por billetes y monedas (JSON: { "NIO": { "B200": 3 }, "USD": { "B20": 1 } }).
+-- Se agrega también a bases creadas antes de esta versión.
+IF COL_LENGTH('dbo.SesionCaja', 'desgloseConteo') IS NULL
+  ALTER TABLE dbo.SesionCaja ADD desgloseConteo NVARCHAR(MAX) NULL;
+GO

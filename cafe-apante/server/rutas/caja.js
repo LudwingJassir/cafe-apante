@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { calcularArqueo } from '../../shared/calculos.js';
+import { calcularArqueo, DENOMINACIONES, limpiarDesglose, totalDesglose } from '../../shared/calculos.js';
 import { q, transaccion, uno } from '../db/conexion.js';
 import { notificar, registrarBitacora } from '../servicios/notificaciones.js';
-import { dinero, ErrorApp, moneda, textoOpcional, validar } from '../util.js';
+import { dinero, entero, ErrorApp, moneda, textoOpcional, validar } from '../util.js';
 
 const router = Router();
 
@@ -60,8 +60,30 @@ router.post('/abrir', async (req, res) => {
   res.status(201).json({ sesion: await sesionAbierta() });
 });
 
+// Cantidad de piezas por denominación: solo las que existen en la moneda, enteros de 0 en adelante.
+const cantidadPiezas = entero.pipe(z.number().min(0, 'No puede ser negativo').max(100000));
+const conteoDe = (monedaConteo) =>
+  z.record(z.string(), cantidadPiezas).refine(
+    (conteo) => Object.keys(conteo).every((idDenominacion) => DENOMINACIONES[monedaConteo].some((d) => d.id === idDenominacion)),
+    'Hay una denominación que no existe',
+  );
+
+const datosCierre = z
+  .object({
+    contadoNIO: dinero.optional(),
+    contadoUSD: dinero.default(0),
+    // Conteo por billetes y monedas. Si viene, los totales se calculan aquí y no se confía en los del navegador.
+    desglose: z.object({ NIO: conteoDe('NIO').default({}), USD: conteoDe('USD').default({}) }).optional(),
+    observacion: textoOpcional(300),
+  })
+  .refine((d) => d.desglose || d.contadoNIO !== undefined, { message: 'Indique cuánto dinero contó', path: ['contadoNIO'] });
+
 router.post('/cerrar', async (req, res) => {
-  const datos = validar(z.object({ contadoNIO: dinero, contadoUSD: dinero.default(0), observacion: textoOpcional(300) }), req.body);
+  const recibido = validar(datosCierre, req.body);
+  const desglose = recibido.desglose ? { NIO: limpiarDesglose('NIO', recibido.desglose.NIO), USD: limpiarDesglose('USD', recibido.desglose.USD) } : null;
+  const datos = desglose
+    ? { ...recibido, contadoNIO: totalDesglose('NIO', desglose.NIO), contadoUSD: totalDesglose('USD', desglose.USD) }
+    : recibido;
   const cierre = await transaccion(async (tx) => {
     const sesion = await uno("SELECT idSesion, montoInicial FROM dbo.SesionCaja WITH (UPDLOCK) WHERE estado = 'ABIERTA'", {}, tx);
     if (!sesion) throw new ErrorApp(409, 'No hay ninguna caja abierta.');
@@ -71,12 +93,14 @@ router.post('/cerrar', async (req, res) => {
       `UPDATE dbo.SesionCaja SET estado = 'CERRADA', idUsuarioCierre = @idUsuario, fechaCierre = SYSDATETIME(),
               esperadoNIO = @esperadoNIO, esperadoUSD = @esperadoUSD, contadoNIO = @contadoNIO, contadoUSD = @contadoUSD,
               diferenciaNIO = @diferenciaNIO, diferenciaUSD = @diferenciaUSD,
-              totalVentas = @totalVentas, totalDepositos = @totalDepositos, observacion = @observacion
+              totalVentas = @totalVentas, totalDepositos = @totalDepositos, observacion = @observacion,
+              desgloseConteo = @desgloseConteo
        WHERE idSesion = @idSesion`,
       {
         idSesion: sesion.idSesion, idUsuario: req.usuario.idUsuario, ...arqueo,
         contadoNIO: datos.contadoNIO, contadoUSD: datos.contadoUSD,
         totalVentas: resumen.totalVentas, totalDepositos: resumen.totalDepositos, observacion: datos.observacion ?? null,
+        desgloseConteo: desglose ? JSON.stringify(desglose) : null,
       },
       tx,
     );
@@ -97,24 +121,33 @@ router.post('/cerrar', async (req, res) => {
       tx,
     );
     await registrarBitacora({ usuario: req.usuario, accion: 'CAJA_CERRADA', detalle: cuadra ? 'Sin diferencias' : `Diferencia: ${diferencias.join(' y ')}` }, tx);
-    return { idSesion: sesion.idSesion, resumen, arqueo };
+    return { idSesion: sesion.idSesion, resumen, arqueo, desglose };
   });
   res.json(cierre);
 });
 
+function leerDesglose(texto) {
+  try {
+    return texto ? JSON.parse(texto) : null;
+  } catch {
+    return null; // un registro dañado no debe impedir ver el resto del historial
+  }
+}
+
 router.get('/sesiones', async (_req, res) => {
-  res.json(
+  const sesiones = (
     await q(
       `SELECT TOP 90 s.idSesion, s.fechaApertura, s.fechaCierre, s.montoInicial, s.esperadoNIO, s.esperadoUSD,
-              s.contadoNIO, s.contadoUSD, s.diferenciaNIO, s.diferenciaUSD, s.totalVentas, s.totalDepositos, s.observacion,
+              s.contadoNIO, s.contadoUSD, s.diferenciaNIO, s.diferenciaUSD, s.totalVentas, s.totalDepositos, s.observacion, s.desgloseConteo,
               a.nombre AS abiertaPor, c.nombre AS cerradaPor
        FROM dbo.SesionCaja s
        JOIN dbo.Usuario a ON a.idUsuario = s.idUsuarioApertura
        LEFT JOIN dbo.Usuario c ON c.idUsuario = s.idUsuarioCierre
        WHERE s.estado = 'CERRADA'
        ORDER BY s.fechaCierre DESC`,
-    ),
-  );
+    )
+  ).map(({ desgloseConteo, ...s }) => ({ ...s, desglose: leerDesglose(desgloseConteo) }));
+  res.json(sesiones);
 });
 
 export default router;
