@@ -1,6 +1,6 @@
 import { networkInterfaces } from 'node:os';
 import { crearApp } from './app.js';
-import { PUERTO, SQL_BASE, SQL_SERVIDOR } from './config.js';
+import { INSTANCIAS_SQL, PUERTO, SQL_BASE, SQL_DRIVER, SQL_SERVIDOR } from './config.js';
 import { ARCHIVO_CONTRASENAS, inicializarBase } from './db/init.js';
 import { iniciarTareas } from './servicios/tareas.js';
 
@@ -13,8 +13,15 @@ try {
     console.log('  Bórrelo cuando los tres usuarios ya hayan entrado y cambiado su contraseña.');
   }
 } catch (error) {
-  console.error(`No se pudo conectar a SQL Server (${SQL_SERVIDOR}, base ${SQL_BASE}).`);
-  console.error('Verifique que el servicio de SQL Server esté iniciado. Detalle:', error.message);
+  console.error('');
+  console.error(`  No se pudo conectar a SQL Server (servidor ${SQL_SERVIDOR}, base ${SQL_BASE}, controlador ${SQL_DRIVER}).`);
+  console.error(`  Detalle: ${error.message}`);
+  console.error('');
+  if (INSTANCIAS_SQL.length === 0) console.error('  - No se encontró SQL Server instalado en esta computadora. Instale SQL Server Express.');
+  else console.error(`  - Instancias instaladas: ${INSTANCIAS_SQL.join(', ')}. Si debe usar otra, indíquela en el archivo .env (vea .env.example).`);
+  if (/data source name|driver/i.test(error.message)) console.error('  - Instale el controlador "ODBC Driver 18 for SQL Server" de Microsoft.');
+  console.error('  - Revise en "Servicios" de Windows que el servicio SQL Server esté iniciado.');
+  console.error('');
   process.exit(1);
 }
 

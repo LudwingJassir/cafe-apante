@@ -11,6 +11,8 @@ cafe-apante/
 ```
 
 Instalación, uso, impuestos, respaldos y seguridad: ver [cafe-apante/README.md](cafe-apante/README.md).
+Para clonar el repositorio y ver el sistema con datos de prueba en otra computadora, siga
+[Para el equipo](cafe-apante/README.md#para-el-equipo-clonar-el-repositorio-y-ver-el-sistema).
 
 > Este repositorio no contiene credenciales ni datos del negocio. Las contraseñas temporales de los usuarios
 > iniciales se generan al azar en cada instalación.
