@@ -1,6 +1,6 @@
 # Café Apante
 
-Sistema de Caja e Inventario para la MYPYME **Café Apante** (Nicaragua): caja con efectivo y depósito por QR,
+Sistema de Caja e Inventario para la MYPYME **Café Apante** (Nicaragua): caja con efectivo y depósito bancario,
 inventario en libras, clientes, impuestos DGI, dashboard con proyecciones, notificaciones y acceso por roles.
 
 ```
