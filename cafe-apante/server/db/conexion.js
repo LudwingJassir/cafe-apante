@@ -13,7 +13,8 @@ export function crearPool(base = SQL_BASE, { requestTimeout = 30000 } = {}) {
     connectionString: cadenaConexion(base),
     requestTimeout,
     options: { useUTC: false },
-    pool: { max: 8, min: 0, idleTimeoutMillis: 30000 },
+    // Conexiones que se mantienen abiertas: reabrirlas tras cada pausa es lo que más demora en una laptop con poca memoria.
+    pool: { max: 8, min: 2, idleTimeoutMillis: 10 * 60 * 1000 },
   });
 }
 

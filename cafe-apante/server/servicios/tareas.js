@@ -84,6 +84,18 @@ async function respaldoAtrasado(ahora) {
   });
 }
 
+// Tablas que consultan las pantallas en cada carga (nombres fijos del esquema, no vienen del usuario).
+const TABLAS_EN_USO = ['Usuario', 'ConfiguracionNegocio', 'ConfiguracionTributaria', 'Producto', 'Presentacion', 'Cliente', 'Venta', 'DetalleVenta', 'Factura', 'SesionCaja', 'MovimientoInventario', 'Gasto', 'Notificacion', 'NotificacionLeida'];
+
+/**
+ * Consulta liviana a las tablas que usan las pantallas. Con poca memoria libre, Windows manda
+ * a disco lo que SQL Server no usa por un rato; tocarlas cada 20 segundos las mantiene listas.
+ */
+async function mantenerBaseActiva() {
+  // CHECKSUM(*) obliga a leer cada fila completa (no solo el índice más pequeño), que es lo que leen las pantallas.
+  await uno(`SELECT ${TABLAS_EN_USO.map((tabla) => `(SELECT CHECKSUM_AGG(CHECKSUM(*)) FROM dbo.${tabla}) AS t${tabla}`).join(', ')}`);
+}
+
 async function ejecutar(nombre, tarea) {
   try {
     await tarea(new Date());
@@ -106,5 +118,6 @@ export function iniciarTareas() {
     await cadaHora();
   }, 5000).unref();
   setInterval(cadaMinuto, 60 * 1000).unref();
+  setInterval(() => ejecutar('mantener base activa', mantenerBaseActiva), 20 * 1000).unref();
   setInterval(cadaHora, 60 * 60 * 1000).unref();
 }

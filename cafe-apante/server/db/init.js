@@ -23,6 +23,11 @@ async function crearBaseSiFalta() {
   try {
     // SQL_BASE ya fue validado en config.js (solo letras, números y guion bajo).
     await maestro.request().query(`IF DB_ID(N'${SQL_BASE}') IS NULL CREATE DATABASE [${SQL_BASE}]`);
+    // SQL Server Express crea las bases con AUTO_CLOSE: las apaga al quedar sin uso y cada
+    // consulta posterior tiene que volver a abrirlas desde el disco. Se desactiva siempre.
+    await maestro.request().query(
+      `IF EXISTS (SELECT 1 FROM sys.databases WHERE name = N'${SQL_BASE}' AND is_auto_close_on = 1) ALTER DATABASE [${SQL_BASE}] SET AUTO_CLOSE OFF`,
+    );
   } finally {
     await maestro.close();
   }
