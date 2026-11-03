@@ -103,76 +103,91 @@ export default function Acceso() {
     }
   }
 
+  // En pantallas angostas el panel verde va debajo del formulario y ocupa lo que sobra de alto.
   return (
-    <div className="grid min-h-dvh lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-      <div className="flex items-center justify-center px-6 py-10">
-        <div className="w-full max-w-md">
-          <Marca claro />
-          <h1 className="mt-10 text-4xl font-semibold text-cafe-900">Bienvenido</h1>
-          <p className="mt-2 text-lg text-cafe-600">Escriba su usuario y su contraseña para entrar.</p>
+    <div className="grid min-h-dvh grid-rows-[auto_1fr] bg-hueso-50 lg:grid-cols-2 lg:grid-rows-1">
+      <main className="flex flex-col px-6 py-8 sm:px-12 lg:px-16 lg:py-12">
+        <Marca claro />
 
-          <form onSubmit={alEnviar} className="mt-8 space-y-5" noValidate>
-            <Entrada
-              etiqueta="Usuario"
-              value={usuario}
-              onChange={(e) => setUsuario(e.target.value)}
-              autoComplete="username"
-              autoCapitalize="none"
-              spellCheck={false}
-              autoFocus={!usuario}
-              required
-            />
-            <Campo etiqueta="Contraseña">
-              {(id) => (
-                <div className="relative">
-                  <input
-                    id={id}
-                    className="control pr-32"
-                    type={verClave ? 'text' : 'password'}
-                    value={contrasena}
-                    onChange={(e) => setContrasena(e.target.value)}
-                    autoComplete="current-password"
-                    autoFocus={Boolean(usuario)}
-                    disabled={bloqueado}
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setVerClave((v) => !v)}
-                    className="absolute inset-y-1.5 right-1.5 flex items-center gap-1.5 rounded-lg px-3 text-sm font-semibold text-cafe-600 hover:bg-hueso-200"
-                  >
-                    {verClave ? <EyeOff className="size-5" aria-hidden /> : <Eye className="size-5" aria-hidden />}
-                    {verClave ? 'Ocultar' : 'Mostrar'}
-                  </button>
-                </div>
-              )}
-            </Campo>
+        <div className="flex flex-1 items-center py-8">
+          <div className="w-full max-w-md">
+            <h1 className="text-[1.333rem] font-semibold leading-tight text-cafe-900 sm:text-[1.75rem]">Bienvenido</h1>
+            <p className="mt-2 text-lg text-cafe-700">Escriba su usuario y su contraseña para entrar.</p>
 
-            {bloqueado ? <AvisoBloqueo segundos={segundosBloqueo} /> : error && <MensajeError mensaje={error} />}
+            <form onSubmit={alEnviar} className="mt-8 space-y-5" noValidate>
+              <Entrada
+                etiqueta="Usuario"
+                value={usuario}
+                onChange={(e) => setUsuario(e.target.value)}
+                autoComplete="username"
+                autoCapitalize="none"
+                spellCheck={false}
+                autoFocus={!usuario}
+                required
+              />
+              <Campo etiqueta="Contraseña">
+                {(id) => (
+                  <div className="relative">
+                    <input
+                      id={id}
+                      className="control pr-32"
+                      type={verClave ? 'text' : 'password'}
+                      value={contrasena}
+                      onChange={(e) => setContrasena(e.target.value)}
+                      autoComplete="current-password"
+                      autoFocus={Boolean(usuario)}
+                      disabled={bloqueado}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setVerClave((v) => !v)}
+                      className="absolute inset-y-1.5 right-1.5 flex items-center gap-1.5 rounded-lg px-3 text-sm font-semibold text-cafe-600 hover:bg-hueso-200"
+                    >
+                      {verClave ? <EyeOff className="size-5" aria-hidden /> : <Eye className="size-5" aria-hidden />}
+                      {verClave ? 'Ocultar' : 'Mostrar'}
+                    </button>
+                  </div>
+                )}
+              </Campo>
 
-            <Boton type="submit" tamano="lg" icono={bloqueado ? Lock : LogIn} cargando={enviando} disabled={bloqueado || !usuario.trim() || !contrasena} className="w-full">
-              {bloqueado ? `Espere ${minutosYSegundos(segundosBloqueo)}` : 'Entrar al sistema'}
-            </Boton>
-          </form>
+              {bloqueado ? <AvisoBloqueo segundos={segundosBloqueo} /> : error && <MensajeError mensaje={error} />}
 
-          <p className="mt-8 text-sm text-cafe-500">¿Olvidó su contraseña? Pídale al Dueño / Administrador que se la restablezca.</p>
-        </div>
-      </div>
-
-      <div className="relative hidden overflow-hidden bg-cafe-900 lg:block">
-        <svg className="absolute inset-0 size-full" viewBox="0 0 800 900" preserveAspectRatio="xMidYMax slice" aria-hidden>
-          <path d="M0 640 150 470l90 80 150-230 130 170 90-90 190 240v260H0Z" fill="#33241b" />
-          <path d="M0 740 210 560l110 90 170-190 150 160 160-70v350H0Z" fill="#463328" />
-          <circle cx="610" cy="210" r="74" fill="#b8702a" opacity="0.9" />
-        </svg>
-        <div className="relative flex h-full flex-col justify-between p-14 text-hueso-50">
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-caramelo-400">Café de altura · Nicaragua</p>
-          <div>
-            <p className="max-w-lg font-display text-5xl font-semibold leading-[1.1]">Del cerro a la taza, con cada libra en orden.</p>
-            <p className="mt-5 max-w-md text-lg text-cafe-300">Caja, inventario, clientes e impuestos de Café Apante en un solo lugar.</p>
+              <Boton type="submit" tamano="lg" icono={bloqueado ? Lock : LogIn} cargando={enviando} disabled={bloqueado || !usuario.trim() || !contrasena} className="w-full">
+                {bloqueado ? `Espere ${minutosYSegundos(segundosBloqueo)}` : 'Entrar al sistema'}
+              </Boton>
+            </form>
           </div>
         </div>
-      </div>
+
+        <p className="max-w-md text-cafe-700">¿Olvidó su contraseña? Pídale al Dueño / Administrador que se la restablezca.</p>
+      </main>
+
+      <Origen />
     </div>
+  );
+}
+
+/**
+ * Las montañas del logo, grandes y en crema sobre el verde de la marca: el mismo cerro de Apante
+ * que lleva cada bolsa. La nieve queda calada en verde, como en el logo.
+ */
+function Origen() {
+  return (
+    <aside className="flex flex-col overflow-hidden bg-bosque-600 px-6 pt-12 sm:px-12 lg:px-16 lg:pt-16" aria-label="Café Apante">
+      <p className="max-w-[26rem] font-display text-[1.333rem] font-semibold leading-[1.2] text-hueso-50 sm:text-[2rem] sm:leading-[1.15]">La pasión cafetalera de la Perla del Septentrión.</p>
+      <p className="mt-4 max-w-[26rem] text-lg leading-relaxed text-bosque-50 sm:mt-5">Café de altura cultivado en las montañas de Matagalpa, en Apante, a 850 metros sobre el nivel del mar.</p>
+
+      {/* El cerro se recorta contra el borde derecho y el de abajo, como un horizonte. */}
+      <div className="relative -ml-6 -mr-10 mt-10 min-h-72 flex-1 sm:-ml-12 lg:-ml-16 lg:-mr-28 lg:mt-12 lg:min-h-60">
+        <svg viewBox="0 0 134 131" preserveAspectRatio="xMaxYMax meet" className="absolute inset-0 size-full" aria-hidden>
+          <path
+            d="M3.3 130.8 55.5 36.7 70 61.3 102 2.5l31.3 59.2-15 20.3L102 55 82.5 87.5l32.8.5-2.3 17H86.7l14.1 25.8H63.7l14.6-25.5h-5l-14.1 25.5Z"
+            fill="#fdfbf7"
+          />
+          <path d="M55.5 54.2 69.7 78.3l-8-2-5.9 8.7-5.8-8.7-8.3 2.9ZM102 20l14.7 25.8-11.4-3.8-4 8-5-8-9.3 3.3Z" fill="#1e5631" />
+        </svg>
+      </div>
+    </aside>
   );
 }

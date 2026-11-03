@@ -5,6 +5,10 @@
   --font-sans: "Source Sans 3 Variable", "Segoe UI", system-ui, sans-serif;
   --font-display: "Fraunces Variable", Georgia, "Times New Roman", serif;
 
+  /* Verde del logo y del empaque. */
+  --color-bosque-50: #eef4ef;
+  --color-bosque-600: #1e5631;
+
   --color-hueso-50: #fdfbf7;
   --color-hueso-100: #f8f4ec;
   --color-hueso-200: #f0e9dc;
