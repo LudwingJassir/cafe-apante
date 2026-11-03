@@ -1,4 +1,4 @@
-import { Banknote, Bell, Calculator, Landmark, LayoutDashboard, Package, Receipt, Settings, ShieldCheck, Tags, TrendingUp, Users, Wallet } from 'lucide-react';
+import { Banknote, Bell, Calculator, FileSpreadsheet, Landmark, LayoutDashboard, Package, Receipt, Settings, ShieldCheck, Tags, TrendingUp, Users, Wallet } from 'lucide-react';
 
 const TODOS = ['ADMIN', 'VENTAS', 'PRODUCCION'];
 
@@ -30,6 +30,7 @@ export const MENU = [
     items: [
       { ruta: '/impuestos', etiqueta: 'Impuestos DGI', icono: Landmark, roles: ['ADMIN'] },
       { ruta: '/gastos', etiqueta: 'Gastos', icono: Wallet, roles: ['ADMIN'] },
+      { ruta: '/reportes', etiqueta: 'Reportes', icono: FileSpreadsheet, roles: ['ADMIN'] },
     ],
   },
   {

@@ -14,6 +14,7 @@ import rutasFinanzas from './rutas/finanzas.js';
 import rutasInventario from './rutas/inventario.js';
 import rutasNotificaciones from './rutas/notificaciones.js';
 import rutasProductos from './rutas/productos.js';
+import rutasReportes from './rutas/reportes.js';
 import rutasUsuarios from './rutas/usuarios.js';
 import rutasVentas from './rutas/ventas.js';
 import { ErrorApp } from './util.js';
@@ -73,6 +74,7 @@ export function crearApp() {
   api.use('/notificaciones', rutasNotificaciones);
   api.use('/config', rutasConfig);
   api.use('/finanzas', permitir('ADMIN'), rutasFinanzas);
+  api.use('/reportes', permitir('ADMIN'), rutasReportes);
   api.use('/analisis', rutasDashboard); // /dashboard solo ADMIN; /proyeccion ADMIN y PRODUCCION
   api.use((_req, _res) => {
     throw new ErrorApp(404, 'Recurso no encontrado.');

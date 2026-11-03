@@ -26,6 +26,7 @@ const PANTALLAS = {
   '/proyeccion': lazy(() => import('./paginas/Proyeccion.jsx')),
   '/impuestos': lazy(() => import('./paginas/Impuestos.jsx')),
   '/gastos': lazy(() => import('./paginas/Gastos.jsx')),
+  '/reportes': lazy(() => import('./paginas/Reportes.jsx')),
   '/notificaciones': lazy(() => import('./paginas/Notificaciones.jsx')),
   '/usuarios': lazy(() => import('./paginas/Usuarios.jsx')),
   '/configuracion': lazy(() => import('./paginas/Configuracion.jsx')),
