@@ -183,6 +183,11 @@ input[type="number"] {
     transform: none !important;
     animation: none !important;
   }
+  /* Los reportes usan la hoja completa; el comprobante, el ancho de la tiquetera. */
+  .imprimible.hoja {
+    width: auto !important;
+    font-size: 10px;
+  }
   .imprimible {
     width: 76mm;
     max-width: 100% !important;

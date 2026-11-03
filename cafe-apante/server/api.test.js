@@ -455,3 +455,30 @@ describe('reglas del bloqueo de acceso configurables', () => {
     expect(bitacora.some((b) => b.accion === 'LOGIN_BLOQUEADO' && /curioso/.test(b.detalle))).toBe(true);
   });
 });
+
+describe('reportes exportables', () => {
+  it('genera cada reporte en JSON y en Excel, solo para el Dueño, y lo registra', async () => {
+    const hoy = new Date();
+    const desde = `${hoy.getFullYear()}-01-01`;
+    for (const tipo of ['ventas', 'inventario', 'clientes', 'impuestos', 'arqueos', 'gastos']) {
+      const r = await api('GET', `/reportes/${tipo}?desde=${desde}`, { como: 'admin' });
+      expect(r.estado).toBe(200);
+      expect(r.datos.hojas.length).toBeGreaterThan(0);
+    }
+    const ventas = await api('GET', `/reportes/ventas?desde=${desde}`, { como: 'admin' });
+    expect(ventas.datos.hojas[0].filas.some((v) => v.numeroFactura === 'A-000001')).toBe(true);
+
+    const excel = await fetch(`${base}/api/reportes/ventas?desde=${desde}&formato=xlsx`, { headers: { Cookie: sesiones.admin } });
+    expect(excel.status).toBe(200);
+    expect(excel.headers.get('content-type')).toMatch(/spreadsheetml/);
+    const bytes = new Uint8Array(await excel.arrayBuffer());
+    expect(String.fromCharCode(bytes[0], bytes[1])).toBe('PK'); // un .xlsx es un ZIP
+
+    expect((await api('GET', '/reportes/ventas', { como: 'ventas' })).estado).toBe(403);
+    expect((await api('GET', '/reportes/inventado', { como: 'admin' })).estado).toBe(404);
+    expect((await api('GET', '/reportes/ventas?desde=2026-05-01&hasta=2026-04-01', { como: 'admin' })).estado).toBe(400);
+    const historial = (await api('GET', '/reportes/historial', { como: 'admin' })).datos;
+    expect(historial.length).toBe(8);
+    expect(historial[0].formato).toBe('EXCEL');
+  });
+});

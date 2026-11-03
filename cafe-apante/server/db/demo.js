@@ -12,7 +12,10 @@ import { inicializarBase } from './init.js';
 
 const DIAS_DE_HISTORIA = 125;
 
-if (SQL_BASE === 'CafeApante') {
+// --agregar: suma la demostración a una base que ya tiene datos, sin borrar nada (por ejemplo, para una presentación).
+const AGREGAR = process.argv.includes('--agregar');
+
+if (SQL_BASE === 'CafeApante' && !AGREGAR) {
   console.error('Por seguridad, los datos de demostración no se cargan en la base real "CafeApante".');
   console.error("Indique otra base, por ejemplo:  $env:SQL_BASE = 'CafeApante_Demo'; npm run db:demo");
   process.exit(1);
@@ -67,12 +70,13 @@ async function sembrarCatalogo(idAdmin) {
     );
     clientes.push({ ...c, idCliente: fila.idCliente });
   }
+  // Solo se completan los datos del negocio que estén vacíos: nunca se pisa la configuración real.
   await q(
-    `UPDATE dbo.ConfiguracionNegocio SET ruc = N'J0000000000000', direccion = N'Managua, Nicaragua (datos de demostración)', telefono = N'0000-0000',
-            banco = N'Banco de Ejemplo', titularCuenta = N'Café Apante (demostración)', cuentaNIO = N'000-000000-0', cuentaUSD = N'000-000000-1'`,
+    `UPDATE dbo.ConfiguracionNegocio SET ruc = ISNULL(ruc, N'J0000000000000'), direccion = ISNULL(direccion, N'Managua, Nicaragua'), telefono = ISNULL(telefono, N'0000-0000'),
+            banco = ISNULL(banco, N'Banco de Ejemplo'), titularCuenta = ISNULL(titularCuenta, N'Café Apante'), cuentaNIO = ISNULL(cuentaNIO, N'000-000000-0'), cuentaUSD = ISNULL(cuentaUSD, N'000-000000-1')`,
   );
-  // En la demostración se entra directo con las contraseñas iniciales, sin cambio obligatorio.
-  await q('UPDATE dbo.Usuario SET debeCambiarContrasena = 0');
+  // En una base solo de demostración se entra con las contraseñas iniciales; en una real se respetan las de cada usuario.
+  if (!AGREGAR) await q('UPDATE dbo.Usuario SET debeCambiarContrasena = 0');
   await q(
     "INSERT INTO dbo.Bitacora (idUsuario, usuario, accion, detalle) VALUES (@id, N'Sistema', 'CONFIG_NEGOCIO', N'Carga de datos de demostración')",
     { id: idAdmin },
@@ -110,7 +114,7 @@ async function sembrarDia(dia, indice, contexto) {
 
     const fondo = 500;
     const { idSesion } = await uno(
-      'INSERT INTO dbo.SesionCaja (idUsuarioApertura, fechaApertura, montoInicial) OUTPUT inserted.idSesion VALUES (@idUsuario, @apertura, @fondo)',
+      "INSERT INTO dbo.SesionCaja (idUsuarioApertura, fechaApertura, montoInicial, estado) OUTPUT inserted.idSesion VALUES (@idUsuario, @apertura, @fondo, 'CERRADA')",
       { idUsuario: usuarios.VENTAS, apertura: hora(8, 0), fondo },
       tx,
     );
@@ -221,8 +225,13 @@ async function sembrarGastos(inicio, hoy, idAdmin) {
 
 try {
   await inicializarBase();
-  if ((await uno('SELECT COUNT(*) AS total FROM dbo.Producto')).total > 0) {
-    console.error(`La base "${SQL_BASE}" ya tiene productos. La demostración solo se carga en una base vacía.`);
+  if (AGREGAR) {
+    if ((await uno("SELECT COUNT(*) AS total FROM dbo.Producto WHERE nombre = N'Café Molido Tueste Medio'")).total > 0) {
+      console.error(`La base "${SQL_BASE}" ya tiene los datos de demostración. No se cargan dos veces.`);
+      process.exit(1);
+    }
+  } else if ((await uno('SELECT COUNT(*) AS total FROM dbo.Producto')).total > 0) {
+    console.error(`La base "${SQL_BASE}" ya tiene productos. La demostración solo se carga en una base vacía (o use --agregar).`);
     process.exit(1);
   }
 
@@ -230,7 +239,10 @@ try {
   const { productos, clientes } = await sembrarCatalogo(usuarios.ADMIN);
   const tributaria = await configTributaria();
   const { tipoCambio, factorStockMedio } = await uno('SELECT tipoCambio, factorStockMedio FROM dbo.ConfiguracionNegocio');
-  const contexto = { productos, clientes, usuarios, tributaria, tipoCambio, lote: 0, factura: 0, deposito: 0 };
+  // La numeración de comprobantes continúa después de los que ya existan.
+  const { siguienteNumero } = await uno('SELECT siguienteNumero FROM dbo.ConfiguracionNegocio WHERE idConfig = 1');
+  const { lotes } = await uno("SELECT COUNT(*) AS lotes FROM dbo.MovimientoInventario WHERE tipo = 'ENTRADA'");
+  const contexto = { productos, clientes, usuarios, tributaria, tipoCambio, lote: lotes, factura: siguienteNumero - 1, deposito: 0 };
 
   const hoy = new Date();
   const inicio = sumarDias(hoy, -DIAS_DE_HISTORIA);

@@ -300,3 +300,15 @@ GO
 IF COL_LENGTH('dbo.ConfiguracionNegocio', 'minutosBloqueoAcceso') IS NULL
   ALTER TABLE dbo.ConfiguracionNegocio ADD minutosBloqueoAcceso INT NOT NULL CONSTRAINT DF_ConfigNeg_bloqueo DEFAULT 5;
 GO
+
+-- Reportes generados (clase «Reporte» del diagrama UML): qué se exportó, cuándo y quién.
+IF OBJECT_ID('dbo.Reporte') IS NULL
+CREATE TABLE dbo.Reporte (
+  idReporte       INT IDENTITY(1,1) PRIMARY KEY,
+  tipo            VARCHAR(20)   NOT NULL,
+  fechaGeneracion DATETIME2(0)  NOT NULL CONSTRAINT DF_Reporte_fecha DEFAULT SYSDATETIME(),
+  idUsuario       INT           NOT NULL CONSTRAINT FK_Reporte_Usuario REFERENCES dbo.Usuario(idUsuario),
+  datos           NVARCHAR(200) NOT NULL, -- periodo o parámetros del reporte
+  formato         VARCHAR(10)   NOT NULL CONSTRAINT CK_Reporte_formato CHECK (formato IN ('EXCEL','PDF'))
+);
+GO
