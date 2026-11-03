@@ -83,9 +83,21 @@ describe('acceso y roles', () => {
     expect((await api('GET', '/productos', { como: 'vieja' })).estado).toBe(401);
   });
 
-  it('tras 5 contraseñas incorrectas bloquea a ese dispositivo para ese usuario, sin afectar a los demás', async () => {
-    for (let i = 0; i < 5; i += 1) expect((await entrar('intruso', 'adivinando-123')).estado).toBe(401);
-    expect((await entrar('intruso', 'adivinando-123')).estado).toBe(429);
+  it('avisa los intentos que quedan y, al llegar a 5, bloquea el ingreso unos minutos sin afectar a los demás', async () => {
+    for (let restantes = 4; restantes >= 1; restantes -= 1) {
+      const r = await entrar('intruso', 'adivinando-123');
+      expect(r.estado).toBe(401);
+      expect(r.datos.intentosRestantes).toBe(restantes);
+      expect(r.datos.error).toMatch(restantes === 1 ? /Le queda 1 intento/ : new RegExp(`Le quedan ${restantes} intentos`));
+    }
+    // El quinto intento ya responde con el bloqueo y el tiempo que falta.
+    const bloqueo = await entrar('intruso', 'adivinando-123');
+    expect(bloqueo.estado).toBe(429);
+    expect(bloqueo.datos.error).toMatch(/no se puede ingresar la contraseña durante 5 minuto/);
+    expect(bloqueo.datos.segundosRestantes).toBeGreaterThan(290);
+    expect(bloqueo.datos.segundosRestantes).toBeLessThanOrEqual(300);
+    // Mientras dure, ni siquiera se revisa la contraseña.
+    expect((await entrar('intruso', 'cualquier-cosa-1')).estado).toBe(429);
     expect((await entrar('admin', CLAVE_NUEVA)).estado).toBe(200);
   });
 
@@ -418,5 +430,28 @@ describe('cierre de caja contado por billetes y monedas', () => {
     const [ultima] = (await api('GET', '/caja/sesiones', { como: 'admin' })).datos;
     expect(ultima.contadoNIO).toBe(55);
     expect(ultima.desglose).toEqual({ NIO: { B50: 1, M5: 1 }, USD: {} });
+  });
+});
+
+describe('reglas del bloqueo de acceso configurables', () => {
+  it('el Dueño cambia la cantidad de intentos y los minutos, y el bloqueo los respeta', async () => {
+    const { negocio } = (await api('GET', '/config/completa', { como: 'admin' })).datos;
+    expect(negocio.intentosAcceso).toBe(5);
+    expect(negocio.minutosBloqueoAcceso).toBe(5);
+
+    expect((await api('PUT', '/config/negocio', { como: 'admin', cuerpo: { ...negocio, intentosAcceso: 2 } })).estado).toBe(400);
+    expect((await api('PUT', '/config/negocio', { como: 'admin', cuerpo: { ...negocio, minutosBloqueoAcceso: 0 } })).estado).toBe(400);
+    expect((await api('PUT', '/config/negocio', { como: 'admin', cuerpo: { ...negocio, intentosAcceso: 3, minutosBloqueoAcceso: 10 } })).estado).toBe(200);
+
+    expect((await entrar('curioso', 'probando-111')).datos.intentosRestantes).toBe(2);
+    expect((await entrar('curioso', 'probando-111')).datos.intentosRestantes).toBe(1);
+    const bloqueo = await entrar('curioso', 'probando-111');
+    expect(bloqueo.estado).toBe(429);
+    expect(bloqueo.datos.error).toMatch(/durante 10 minuto/);
+    expect(bloqueo.datos.segundosRestantes).toBeGreaterThan(590);
+
+    const bitacora = (await api('GET', '/usuarios/bitacora', { como: 'admin' })).datos;
+    expect(bitacora.some((b) => b.accion === 'CONFIG_NEGOCIO' && /intentos de contraseña: 5 → 3/.test(b.detalle))).toBe(true);
+    expect(bitacora.some((b) => b.accion === 'LOGIN_BLOQUEADO' && /curioso/.test(b.detalle))).toBe(true);
   });
 });

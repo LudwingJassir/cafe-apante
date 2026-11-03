@@ -292,3 +292,11 @@ GO
 IF COL_LENGTH('dbo.SesionCaja', 'desgloseConteo') IS NULL
   ALTER TABLE dbo.SesionCaja ADD desgloseConteo NVARCHAR(MAX) NULL;
 GO
+
+-- Reglas del bloqueo de acceso por contraseñas incorrectas, editables por el Dueño.
+IF COL_LENGTH('dbo.ConfiguracionNegocio', 'intentosAcceso') IS NULL
+  ALTER TABLE dbo.ConfiguracionNegocio ADD intentosAcceso INT NOT NULL CONSTRAINT DF_ConfigNeg_intentos DEFAULT 5;
+GO
+IF COL_LENGTH('dbo.ConfiguracionNegocio', 'minutosBloqueoAcceso') IS NULL
+  ALTER TABLE dbo.ConfiguracionNegocio ADD minutosBloqueoAcceso INT NOT NULL CONSTRAINT DF_ConfigNeg_bloqueo DEFAULT 5;
+GO

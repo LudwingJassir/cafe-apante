@@ -1,6 +1,6 @@
 # Café Apante · Sistema de Caja e Inventario
 
-Aplicación web de despliegue local para la MYPYME **Café Apante**: caja (efectivo y depósito con QR),
+Aplicación web de despliegue local para la MYPYME **Café Apante**: caja (efectivo y depósito bancario),
 inventario en libras, clientes, impuestos DGI, dashboard con proyecciones y panel de notificaciones,
 con acceso por roles. Corre en la laptop del negocio y el Dueño puede verla desde su celular por Wi-Fi.
 
@@ -23,7 +23,7 @@ controlador *ODBC Driver 18 for SQL Server*. La base de datos `CafeApante` se cr
 
 ## Primeros pasos (el sistema arranca vacío)
 
-1. **Configuración** → datos del negocio, cuenta bancaria para el QR y tipo de cambio.
+1. **Configuración** → datos del negocio, cuenta bancaria para depósitos y tipo de cambio.
 2. **Productos y precios** → cree cada café con sus bolsas (400 g y 1 lb) y precios normal y mayorista.
 3. **Inventario** → Producción registra las entradas de café en libras.
 4. **Caja** → abra la caja con el fondo inicial y empiece a vender.
@@ -35,7 +35,7 @@ controlador *ODBC Driver 18 for SQL Server*. La base de datos `CafeApante` se cr
 | RF01 Administrar usuarios y permisos | *Usuarios y permisos*: altas, roles, activar/desactivar, contraseñas temporales, bitácora |
 | RF02 Entrada de café y ajuste de mermas | *Inventario*: entrada por lote, merma con motivo, ajuste por conteo físico, historial |
 | RF03 Alerta de stock bajo | Semáforo (verde / amarillo / rojo) y panel de *Notificaciones* (stock medio, bajo y agotado) |
-| RF04 Registrar venta | *Caja*: efectivo en córdobas o dólares (vuelto en córdobas) y depósito con QR de la cuenta; el depósito exige anotar su número de referencia |
+| RF04 Registrar venta | *Caja*: efectivo en córdobas o dólares (vuelto en córdobas) y depósito bancario (se muestran la cuenta y el monto); el depósito exige anotar su número de referencia |
 | Arqueo y cierre de caja | *Arqueo de caja*: conteo billete por billete (córdobas: billetes de C$ 10 a C$ 1,000 y monedas de 10 centavos a C$ 10; dólares: billetes de US$ 1 a US$ 100) o escribiendo el total; el desglose queda guardado en cada cierre |
 | RF05 Factura y parámetros tributarios | Comprobante imprimible con IVA desglosado; tasas editables en *Configuración → Impuestos* |
 | RF06 Registrar cliente | *Clientes*: Grandes (precio mayorista) y Pequeños, con historial y hábitos de compra |
@@ -125,6 +125,9 @@ Decisiones respecto al documento de planificación:
   sus bolsas de venta con precio propio, en lugar de un único `precioPorLibra`.
 - **Gastos**: se agregó un registro simple de gastos, necesario para estimar la renta neta del IR anual.
 - **Notificaciones, sesiones de caja, respaldos y bitácora** son tablas adicionales al diagrama de clases.
+- **Bloqueo de acceso**: tras 5 contraseñas incorrectas seguidas (configurable de 3 a 10), la pantalla de acceso muestra
+  «no se puede ingresar la contraseña durante X minutos» con una cuenta regresiva (de 1 a 60 minutos, 5 por omisión),
+  y el sistema avisa al Dueño. Se ajusta en *Configuración → Negocio → Seguridad del acceso*.
 - **Seguridad**: contraseñas con bcrypt; sesión en cookie `httpOnly` que se borra al cerrar el navegador,
   vence a las 10 horas y se cierra sola tras 30 minutos sin uso; cambiar la contraseña cierra las demás
   sesiones; bloqueo de 5 minutos por dispositivo tras 5 intentos fallidos; consultas parametrizadas y permisos

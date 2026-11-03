@@ -40,7 +40,7 @@ export function crearApp() {
           defaultSrc: ["'self'"],
           scriptSrc: ["'self'"],
           styleSrc: ["'self'", "'unsafe-inline'"], // los gráficos aplican estilos en línea
-          imgSrc: ["'self'", 'data:'], // el código QR se genera como imagen data:
+          imgSrc: ["'self'", 'data:'], // el código QR del acceso desde el celular se genera como imagen data:
           fontSrc: ["'self'", 'data:'],
           connectSrc: ["'self'"],
           objectSrc: ["'none'"],
@@ -92,7 +92,7 @@ export function crearApp() {
 
   // eslint-disable-next-line no-unused-vars -- Express reconoce el manejador de errores por sus 4 parámetros
   app.use((error, _req, res, _next) => {
-    if (error instanceof ErrorApp) return res.status(error.estado).json({ error: error.message });
+    if (error instanceof ErrorApp) return res.status(error.estado).json({ ...(error.datos ?? {}), error: error.message });
     if (error.type === 'entity.parse.failed' || error.type === 'entity.too.large') {
       return res.status(400).json({ error: 'No se pudieron leer los datos enviados.' });
     }

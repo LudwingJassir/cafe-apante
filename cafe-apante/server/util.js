@@ -1,10 +1,12 @@
 import { z } from 'zod';
 
 /** Error con mensaje pensado para mostrarse tal cual a la persona usuaria. */
+/** Error con mensaje pensado para mostrarse tal cual. `datos` viaja junto al mensaje (por ejemplo, segundos de bloqueo). */
 export class ErrorApp extends Error {
-  constructor(estado, mensaje) {
+  constructor(estado, mensaje, datos = null) {
     super(mensaje);
     this.estado = estado;
+    this.datos = datos;
   }
 }
 

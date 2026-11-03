@@ -1,10 +1,50 @@
-import { Eye, EyeOff, LogIn } from 'lucide-react';
-import { useState } from 'react';
+import { Eye, EyeOff, Lock, LogIn } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useSesion } from '../contexto.jsx';
 import { Marca } from '../Estructura.jsx';
 import { Boton, Campo, Entrada, MensajeError } from '../ui.jsx';
 
 const CLAVE_ULTIMO_USUARIO = 'apante:ultimo-usuario';
+const CLAVE_BLOQUEO = (usuario) => `apante:bloqueo:${usuario.trim().toLowerCase()}`;
+
+/** Hora (ms) hasta la que este usuario está bloqueado en este navegador; 0 si no lo está. Sobrevive a una recarga. */
+function leerBloqueo(usuario) {
+  try {
+    const hasta = Number(sessionStorage.getItem(CLAVE_BLOQUEO(usuario)));
+    return hasta > Date.now() ? hasta : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function guardarBloqueo(usuario, hasta) {
+  try {
+    if (hasta) sessionStorage.setItem(CLAVE_BLOQUEO(usuario), String(hasta));
+    else sessionStorage.removeItem(CLAVE_BLOQUEO(usuario));
+  } catch {
+    // Sin almacenamiento el aviso funciona igual; el servidor mantiene el bloqueo de todas formas.
+  }
+}
+
+const minutosYSegundos = (segundos) => `${Math.floor(segundos / 60)}:${String(segundos % 60).padStart(2, '0')}`;
+
+function AvisoBloqueo({ segundos }) {
+  return (
+    <div className="rounded-2xl border-2 border-peligro-600 bg-peligro-50 p-5 text-peligro-700">
+      <div className="flex gap-3">
+        <Lock className="mt-0.5 size-7 shrink-0" aria-hidden />
+        <div>
+          <p className="text-lg font-bold" role="alert">
+            Ingreso bloqueado por seguridad
+          </p>
+          <p className="mt-1">Hubo demasiados intentos con una contraseña incorrecta. No se puede ingresar la contraseña durante:</p>
+          <p className="mt-2 font-display text-4xl font-semibold tabular-nums">{minutosYSegundos(segundos)}</p>
+          <p className="mt-2 text-sm">Si olvidó su contraseña, pídale al Dueño / Administrador que se la restablezca.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Acceso() {
   const { entrar } = useSesion();
@@ -13,6 +53,31 @@ export default function Acceso() {
   const [verClave, setVerClave] = useState(false);
   const [error, setError] = useState(null);
   const [enviando, setEnviando] = useState(false);
+  const [bloqueadoHasta, setBloqueadoHasta] = useState(() => leerBloqueo(usuario));
+  const [ahora, setAhora] = useState(() => Date.now());
+
+  // Cada usuario tiene su propio bloqueo: al cambiar el nombre se muestra el que le corresponda.
+  useEffect(() => {
+    setBloqueadoHasta(leerBloqueo(usuario));
+  }, [usuario]);
+
+  // Cuenta regresiva: cuando llega a cero, el campo de contraseña se habilita solo.
+  useEffect(() => {
+    if (!bloqueadoHasta) return undefined;
+    const reloj = setInterval(() => {
+      const momento = Date.now();
+      setAhora(momento);
+      if (momento >= bloqueadoHasta) {
+        setBloqueadoHasta(0);
+        guardarBloqueo(usuario, 0);
+        setError(null);
+      }
+    }, 1000);
+    return () => clearInterval(reloj);
+  }, [bloqueadoHasta, usuario]);
+
+  const segundosBloqueo = bloqueadoHasta ? Math.max(0, Math.ceil((bloqueadoHasta - ahora) / 1000)) : 0;
+  const bloqueado = segundosBloqueo > 0;
 
   async function alEnviar(e) {
     e.preventDefault();
@@ -23,8 +88,16 @@ export default function Acceso() {
       // Solo se recuerda el nombre de usuario, nunca la contraseña.
       localStorage.setItem(CLAVE_ULTIMO_USUARIO, usuario.trim());
     } catch (err) {
-      setError(err.message);
       setContrasena('');
+      if (err.estado === 429 && err.datos.segundosRestantes) {
+        const hasta = Date.now() + err.datos.segundosRestantes * 1000;
+        guardarBloqueo(usuario, hasta);
+        setAhora(Date.now());
+        setBloqueadoHasta(hasta);
+        setError(null);
+      } else {
+        setError(err.message);
+      }
     } finally {
       setEnviando(false);
     }
@@ -60,6 +133,7 @@ export default function Acceso() {
                     onChange={(e) => setContrasena(e.target.value)}
                     autoComplete="current-password"
                     autoFocus={Boolean(usuario)}
+                    disabled={bloqueado}
                     required
                   />
                   <button
@@ -74,10 +148,10 @@ export default function Acceso() {
               )}
             </Campo>
 
-            {error && <MensajeError mensaje={error} />}
+            {bloqueado ? <AvisoBloqueo segundos={segundosBloqueo} /> : error && <MensajeError mensaje={error} />}
 
-            <Boton type="submit" tamano="lg" icono={LogIn} cargando={enviando} disabled={!usuario.trim() || !contrasena} className="w-full">
-              Entrar al sistema
+            <Boton type="submit" tamano="lg" icono={bloqueado ? Lock : LogIn} cargando={enviando} disabled={bloqueado || !usuario.trim() || !contrasena} className="w-full">
+              {bloqueado ? `Espere ${minutosYSegundos(segundosBloqueo)}` : 'Entrar al sistema'}
             </Boton>
           </form>
 

@@ -53,6 +53,23 @@ export function exigirContrasenaNoObvia(contrasena, nombreUsuario) {
   }
 }
 
+/** Cantidad de intentos y minutos de bloqueo vigentes (los define el Dueño en Configuración). */
+async function reglasDeAcceso() {
+  const fila = await uno('SELECT intentosAcceso, minutosBloqueoAcceso FROM dbo.ConfiguracionNegocio WHERE idConfig = 1');
+  return { intentos: fila?.intentosAcceso ?? MAX_INTENTOS_LOGIN, minutos: fila?.minutosBloqueoAcceso ?? MINUTOS_BLOQUEO };
+}
+
+/** Mensaje de bloqueo con el tiempo que falta, en minutos y en segundos para la cuenta regresiva de la pantalla. */
+function errorDeBloqueo(hasta) {
+  const segundosRestantes = Math.max(1, Math.ceil((hasta - Date.now()) / 1000));
+  const minutos = Math.ceil(segundosRestantes / 60);
+  return new ErrorApp(
+    429,
+    `Por seguridad, no se puede ingresar la contraseña durante ${minutos} minuto(s): hubo demasiados intentos incorrectos. Espere y vuelva a intentarlo.`,
+    { segundosRestantes },
+  );
+}
+
 function datosPublicos(u) {
   return { idUsuario: u.idUsuario, nombre: u.nombre, usuario: u.usuario, correo: u.correo, rol: u.rol, debeCambiarContrasena: Boolean(u.debeCambiarContrasena) };
 }
@@ -63,10 +80,9 @@ router.post('/login', async (req, res) => {
 
   const clave = `${usuario.toLowerCase()}|${req.ip}`;
   const bloqueo = fallosPorUsuarioYOrigen.get(clave);
-  if (bloqueo?.hasta > Date.now()) {
-    throw new ErrorApp(429, `Demasiados intentos fallidos. Espere ${Math.ceil((bloqueo.hasta - Date.now()) / 60000)} minuto(s) e intente de nuevo.`);
-  }
+  if (bloqueo?.hasta > Date.now()) throw errorDeBloqueo(bloqueo.hasta);
 
+  const reglas = await reglasDeAcceso();
   const fila = await uno(
     'SELECT idUsuario, nombre, usuario, correo, contrasena, rol, estado, debeCambiarContrasena, versionSesion FROM dbo.Usuario WHERE usuario = @usuario',
     { usuario },
@@ -78,21 +94,28 @@ router.post('/login', async (req, res) => {
     // simultáneas no pueden contarse como un solo fallo.
     const cuenta = (fallosPorUsuarioYOrigen.get(clave)?.cuenta ?? 0) + 1;
     const ahora = Date.now();
-    if (cuenta >= MAX_INTENTOS_LOGIN) {
-      fallosPorUsuarioYOrigen.set(clave, { cuenta: 0, hasta: ahora + MINUTOS_BLOQUEO * 60000, visto: ahora });
-      await registrarBitacora({ usuario: fila, accion: 'LOGIN_BLOQUEADO', detalle: `${MAX_INTENTOS_LOGIN} contraseñas incorrectas para "${usuario}" desde ${req.ip}` });
+    if (cuenta >= reglas.intentos) {
+      const hasta = ahora + reglas.minutos * 60000;
+      fallosPorUsuarioYOrigen.set(clave, { cuenta: 0, hasta, visto: ahora });
+      await registrarBitacora({ usuario: fila, accion: 'LOGIN_BLOQUEADO', detalle: `${reglas.intentos} contraseñas incorrectas para "${usuario}" desde ${req.ip}` });
       await notificar({
         tipo: 'USUARIOS',
         nivel: 'ADVERTENCIA',
         titulo: 'Intentos fallidos de acceso',
-        mensaje: `Alguien falló ${MAX_INTENTOS_LOGIN} veces la contraseña del usuario "${usuario}" desde el dispositivo ${req.ip}. Ese dispositivo quedó bloqueado ${MINUTOS_BLOQUEO} minutos para ese usuario.`,
+        mensaje: `Alguien falló ${reglas.intentos} veces la contraseña del usuario "${usuario}" desde el dispositivo ${req.ip}. Ese dispositivo quedó bloqueado ${reglas.minutos} minutos para ese usuario.`,
         roles: ['ADMIN'],
         enlace: '/usuarios',
       });
-    } else {
-      fallosPorUsuarioYOrigen.set(clave, { cuenta, hasta: 0, visto: ahora });
+      // El mismo intento que agota el límite ya avisa del bloqueo, sin esperar a un intento más.
+      throw errorDeBloqueo(hasta);
     }
-    throw new ErrorApp(401, 'Usuario o contraseña incorrectos.');
+    fallosPorUsuarioYOrigen.set(clave, { cuenta, hasta: 0, visto: ahora });
+    const restantes = reglas.intentos - cuenta;
+    throw new ErrorApp(
+      401,
+      `Usuario o contraseña incorrectos. ${restantes === 1 ? 'Le queda 1 intento' : `Le quedan ${restantes} intentos`} antes de que el ingreso se bloquee por ${reglas.minutos} minuto(s).`,
+      { intentosRestantes: restantes },
+    );
   }
 
   fallosPorUsuarioYOrigen.delete(clave);
