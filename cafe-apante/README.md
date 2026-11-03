@@ -18,8 +18,56 @@ con acceso por roles. Corre en la laptop del negocio y el Dueño puede verla des
 | `ventas` | Gerente de Ventas | Caja, ventas y facturas, arqueo de caja, clientes, consultar existencias |
 | `produccion` | Responsable de Producción | Entradas de café, mermas, ajustes de inventario, proyección de demanda |
 
-Requisitos de la laptop: Windows, **SQL Server Express** (instancia `SQLEXPRESS01`), **Node.js LTS** y el
-controlador *ODBC Driver 18 for SQL Server*. La base de datos `CafeApante` se crea sola al primer arranque.
+Requisitos de la laptop: Windows, **SQL Server Express**, **Node.js LTS** y el controlador
+*ODBC Driver 18 for SQL Server* (sirve también el 17). El sistema encuentra solo la instancia de SQL Server
+instalada y la base de datos `CafeApante` se crea sola al primer arranque.
+
+## Para el equipo: clonar el repositorio y ver el sistema
+
+Cada compañero puede tener el sistema completo en su computadora, con su propia base de datos.
+
+1. **Instale una sola vez** (todo es gratuito):
+   - [Git](https://git-scm.com/download/win) y [Node.js LTS](https://nodejs.org) (versión 22 o más nueva).
+   - [SQL Server Express](https://www.microsoft.com/es-es/sql-server/sql-server-downloads): la instalación
+     *Básica* basta. Cualquier nombre de instancia sirve (`SQLEXPRESS`, `SQLEXPRESS01` o la predeterminada).
+   - [ODBC Driver 18 for SQL Server](https://learn.microsoft.com/es-es/sql/connect/odbc/download-odbc-driver-for-sql-server)
+     (a veces ya viene con SQL Server).
+   - Para ver las tablas: [SQL Server Management Studio (SSMS)](https://learn.microsoft.com/es-es/ssms/install/install).
+2. **Descargue el proyecto e instale sus componentes** (en una terminal):
+   ```bat
+   git clone https://github.com/LudwingJassir/cafe-apante.git
+   cd cafe-apante\cafe-apante
+   npm install
+   ```
+3. **Vea el sistema con datos de prueba** (unos 4 meses de ventas, clientes, cierres de caja y gastos):
+   ```bat
+   npm run db:demo
+   npm run demo
+   ```
+   Se abre en `http://localhost:3210`. Los usuarios y contraseñas de la demostración quedan en el archivo
+   `contrasenas-iniciales-CafeApante_Demo.txt` de esa carpeta.
+4. **O ábralo vacío**, como lo recibe el negocio: doble clic en `iniciar.bat` (`http://localhost:3000`, contraseñas
+   en `contrasenas-iniciales.txt`).
+5. **Para ver la base de datos**, abra SSMS y conéctese con *Autenticación de Windows* al servidor
+   `.\SQLEXPRESS` (o el nombre de su instancia). Ahí están `CafeApante_Demo` (la demostración) y `CafeApante`.
+   Las tablas siguen el diagrama de clases y se definen en `server/db/esquema.sql`.
+
+**Qué no está en GitHub, a propósito.** El repositorio es público: no lleva la base de datos del negocio, ni
+respaldos `.bak`, ni contraseñas, ni el archivo `server/.secreto`. Cada computadora crea los suyos al arrancar.
+Si necesitan los mismos datos reales, pase un respaldo `.bak` en persona (memoria USB) y restáurelo con SSMS;
+nunca lo suba al repositorio.
+
+**Para traer los cambios nuevos**: `git pull`, luego `npm install` y `npm run build` (o borre la carpeta `dist`
+para que `iniciar.bat` la vuelva a preparar).
+
+**Si algo falla:**
+
+| Mensaje | Qué hacer |
+|---|---|
+| `No se pudo conectar a SQL Server` | El mensaje muestra las instancias instaladas. Revise que el servicio *SQL Server* esté iniciado (Windows → *Servicios*). Si debe usar otra instancia, copie `.env.example` como `.env` y escriba su nombre en `SQL_SERVIDOR`. |
+| `Data source name not found` o algo sobre el *driver* | Instale *ODBC Driver 18 for SQL Server*. |
+| `npm` no se reconoce | Instale Node.js LTS y abra una terminal nueva. |
+| `El puerto 3000 ya está en uso` | El sistema ya está abierto en otra ventana: ciérrela. |
 
 ## Primeros pasos (el sistema arranca vacío)
 

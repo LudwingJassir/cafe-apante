@@ -4,22 +4,27 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-do
 import { api } from './api.js';
 import { useSesion } from './contexto.jsx';
 import { haceCuanto, NOMBRE_ROL } from './formato.js';
+import Logo from './Logo.jsx';
 import { menuPara } from './menu.js';
 import { Boton, ESTILO_NIVEL } from './ui.jsx';
 
 
+/** Logo del negocio. Sobre la barra oscura va en una placa clara, como en la etiqueta del empaque. */
 export function Marca({ claro = false }) {
-  return (
-    <span className="flex items-center gap-3">
-      <svg viewBox="0 0 64 64" className="size-11 shrink-0" aria-hidden>
-        <rect width="64" height="64" rx="16" fill={claro ? '#261a14' : '#f8f4ec'} fillOpacity={claro ? 1 : 0.08} />
-        <path d="M32 12c-11 0-19 9-19 20s8 20 19 20 19-9 19-20-8-20-19-20Z" fill="#b8702a" />
-        <path d="M38 14c-9 7-4 15-8 21-3 5-9 6-12 12" fill="none" stroke={claro ? '#261a14' : '#261a14'} strokeWidth="4" strokeLinecap="round" />
-      </svg>
-      <span className="leading-tight">
-        <span className={`block font-display text-[1.45rem] font-semibold ${claro ? 'text-cafe-900' : 'text-hueso-50'}`}>Café Apante</span>
-        <span className={`block text-[0.8rem] tracking-wide ${claro ? 'text-cafe-500' : 'text-cafe-300'}`}>Caja e Inventario</span>
+  if (claro) {
+    return (
+      <span className="block">
+        <Logo className="h-auto w-56 max-w-full" />
+        <span className="mt-1 block pl-1 font-semibold text-cafe-600">Caja e inventario</span>
       </span>
+    );
+  }
+  return (
+    <span className="block">
+      <span className="block rounded-2xl bg-hueso-50 px-3.5 py-3 shadow-sm">
+        <Logo className="h-auto w-full" />
+      </span>
+      <span className="mt-2 block text-center text-[0.9rem] font-semibold text-cafe-300">Caja e inventario</span>
     </span>
   );
 }
@@ -228,6 +233,7 @@ export default function Estructura() {
         <Boton variante="secundario" icono={Menu} className="shrink-0 lg:hidden" onClick={() => setMenuAbierto(true)}>
           Menú
         </Boton>
+        <Logo conTexto={false} className="h-9 w-[3.3rem] shrink-0 lg:hidden" />
         <div className="flex-1" />
         <BotonLetra />
         <Campana />

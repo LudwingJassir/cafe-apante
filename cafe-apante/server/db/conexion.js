@@ -7,15 +7,28 @@ export function cadenaConexion(base = SQL_BASE) {
   return `Driver={${SQL_DRIVER}};Server=${SQL_SERVIDOR};Database=${base};Trusted_Connection=yes;TrustServerCertificate=yes;`;
 }
 
+const ESPERA_CONEXION_MS = 30 * 1000;
+
 export function crearPool(base = SQL_BASE, { requestTimeout = 30000 } = {}) {
   // useUTC:false => las fechas se guardan y leen en la hora local de la laptop.
-  return new sql.ConnectionPool({
+  const nuevo = new sql.ConnectionPool({
     connectionString: cadenaConexion(base),
     requestTimeout,
     options: { useUTC: false },
     // Conexiones que se mantienen abiertas: reabrirlas tras cada pausa es lo que más demora en una laptop con poca memoria.
     pool: { max: 8, min: 2, idleTimeoutMillis: 10 * 60 * 1000 },
   });
+  // Con un nombre de instancia que no existe, el controlador ODBC se queda esperando para siempre
+  // (no respeta su propio tiempo límite): se corta aquí para poder mostrar qué revisar.
+  const conectar = nuevo.connect.bind(nuevo);
+  nuevo.connect = () => {
+    let reloj;
+    const limite = new Promise((_, rechazar) => {
+      reloj = setTimeout(() => rechazar(new Error(`SQL Server no respondió en ${ESPERA_CONEXION_MS / 1000} segundos.`)), ESPERA_CONEXION_MS);
+    });
+    return Promise.race([conectar(), limite]).finally(() => clearTimeout(reloj));
+  };
+  return nuevo;
 }
 
 let pool;
