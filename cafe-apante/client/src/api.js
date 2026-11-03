@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 export class ErrorApi extends Error {
-  constructor(estado, mensaje) {
+  /** `datos`: lo demás que mandó el servidor junto al mensaje (por ejemplo, segundos de bloqueo). */
+  constructor(estado, mensaje, datos = {}) {
     super(mensaje);
     this.estado = estado;
+    this.datos = datos ?? {};
   }
 }
 
@@ -25,7 +27,7 @@ export async function api(ruta, { metodo = 'GET', cuerpo } = {}) {
   const datos = await respuesta.json().catch(() => null);
   if (!respuesta.ok) {
     if (respuesta.status === 401 && !ruta.startsWith('/auth/login')) window.dispatchEvent(new Event(EVENTO_SESION_VENCIDA));
-    throw new ErrorApi(respuesta.status, datos?.error ?? 'Ocurrió un problema. Intente de nuevo.');
+    throw new ErrorApi(respuesta.status, datos?.error ?? 'Ocurrió un problema. Intente de nuevo.', datos);
   }
   return datos;
 }

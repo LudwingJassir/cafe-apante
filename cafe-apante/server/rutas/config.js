@@ -58,6 +58,8 @@ const datosNegocio = z.object({
       .nullish(),
   ),
   respaldoConservar: numero().pipe(z.number().int().min(1).max(365)),
+  intentosAcceso: numero().pipe(z.number().int('Debe ser un número entero').min(3, 'Mínimo 3 intentos').max(10, 'Máximo 10 intentos')),
+  minutosBloqueoAcceso: numero().pipe(z.number().int('Debe ser un número entero').min(1, 'Mínimo 1 minuto').max(60, 'Máximo 60 minutos')),
 });
 
 const CAMPOS_PUBLICOS = 'nombre, ruc, direccion, telefono, mensajeComprobante, banco, titularCuenta, cuentaNIO, cuentaUSD, tipoCambio';
@@ -92,12 +94,13 @@ router.put('/tributaria', soloAdmin, async (req, res) => {
 
 router.put('/negocio', soloAdmin, async (req, res) => {
   const d = validar(datosNegocio, req.body);
-  const antes = await uno('SELECT tipoCambio, seriePrefijo, factorStockMedio, respaldoDestino, cuentaNIO, cuentaUSD FROM dbo.ConfiguracionNegocio WHERE idConfig = 1');
+  const antes = await uno('SELECT tipoCambio, seriePrefijo, factorStockMedio, respaldoDestino, cuentaNIO, cuentaUSD, intentosAcceso, minutosBloqueoAcceso FROM dbo.ConfiguracionNegocio WHERE idConfig = 1');
   await q(
     `UPDATE dbo.ConfiguracionNegocio SET nombre = @nombre, ruc = @ruc, direccion = @direccion, telefono = @telefono,
             mensajeComprobante = @mensajeComprobante, banco = @banco, titularCuenta = @titularCuenta, cuentaNIO = @cuentaNIO,
             cuentaUSD = @cuentaUSD, tipoCambio = @tipoCambio, seriePrefijo = @seriePrefijo, factorStockMedio = @factorStockMedio,
-            respaldoAuto = @respaldoAuto, respaldoHora = @respaldoHora, respaldoDestino = @respaldoDestino, respaldoConservar = @respaldoConservar
+            respaldoAuto = @respaldoAuto, respaldoHora = @respaldoHora, respaldoDestino = @respaldoDestino, respaldoConservar = @respaldoConservar,
+            intentosAcceso = @intentosAcceso, minutosBloqueoAcceso = @minutosBloqueoAcceso
      WHERE idConfig = 1`,
     {
       ...d, ruc: d.ruc ?? null, direccion: d.direccion ?? null, telefono: d.telefono ?? null, mensajeComprobante: d.mensajeComprobante ?? null,
@@ -115,8 +118,8 @@ router.put('/negocio', soloAdmin, async (req, res) => {
   }
 
   // Los cambios sensibles quedan en la bitácora con el valor anterior y el nuevo.
-  const despues = { tipoCambio: d.tipoCambio, seriePrefijo: d.seriePrefijo.toUpperCase(), factorStockMedio: d.factorStockMedio, respaldoDestino: d.respaldoDestino ?? null, cuentaNIO: d.cuentaNIO ?? null, cuentaUSD: d.cuentaUSD ?? null };
-  const nombres = { tipoCambio: 'tipo de cambio', seriePrefijo: 'serie', factorStockMedio: 'margen de stock medio', respaldoDestino: 'carpeta de respaldo', cuentaNIO: 'cuenta en córdobas', cuentaUSD: 'cuenta en dólares' };
+  const despues = { tipoCambio: d.tipoCambio, seriePrefijo: d.seriePrefijo.toUpperCase(), factorStockMedio: d.factorStockMedio, respaldoDestino: d.respaldoDestino ?? null, cuentaNIO: d.cuentaNIO ?? null, cuentaUSD: d.cuentaUSD ?? null, intentosAcceso: d.intentosAcceso, minutosBloqueoAcceso: d.minutosBloqueoAcceso };
+  const nombres = { tipoCambio: 'tipo de cambio', seriePrefijo: 'serie', factorStockMedio: 'margen de stock medio', respaldoDestino: 'carpeta de respaldo', cuentaNIO: 'cuenta en córdobas', cuentaUSD: 'cuenta en dólares', intentosAcceso: 'intentos de contraseña', minutosBloqueoAcceso: 'minutos de bloqueo' };
   const cambios = Object.keys(nombres)
     .filter((campo) => String(antes[campo] ?? '') !== String(despues[campo] ?? ''))
     .map((campo) => `${nombres[campo]}: ${antes[campo] ?? '(vacío)'} → ${despues[campo] ?? '(vacío)'}`);

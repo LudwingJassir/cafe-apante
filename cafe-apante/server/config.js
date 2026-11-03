@@ -13,6 +13,7 @@ export const SQL_SERVIDOR = process.env.SQL_SERVIDOR ?? '.\\SQLEXPRESS01';
 export const SQL_BASE = process.env.SQL_BASE ?? 'CafeApante';
 export const SQL_DRIVER = process.env.SQL_DRIVER ?? 'ODBC Driver 18 for SQL Server';
 export const HORAS_SESION = 10;
+// Valores por omisión del bloqueo de acceso; el Dueño puede cambiarlos en Configuración.
 export const MAX_INTENTOS_LOGIN = 5;
 export const MINUTOS_BLOQUEO = 5;
 

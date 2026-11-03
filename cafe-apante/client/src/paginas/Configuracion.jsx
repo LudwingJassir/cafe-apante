@@ -36,6 +36,8 @@ function useNegocio(inicial, alGuardar) {
     tipoCambio: String(inicial.tipoCambio),
     porcentajeMedio: String(Math.round((inicial.factorStockMedio - 1) * 100)),
     respaldoConservar: String(inicial.respaldoConservar),
+    intentosAcceso: String(inicial.intentosAcceso ?? 5),
+    minutosBloqueoAcceso: String(inicial.minutosBloqueoAcceso ?? 5),
   }));
   const [guardando, setGuardando] = useState(false);
   const cambiar = (campo) => (e) => setN((d) => ({ ...d, [campo]: e.target.value }));
@@ -52,6 +54,7 @@ function useNegocio(inicial, alGuardar) {
           tipoCambio: aNumero(n.tipoCambio), seriePrefijo: n.seriePrefijo,
           factorStockMedio: 1 + (aNumero(n.porcentajeMedio) ?? 0) / 100,
           respaldoAuto: Boolean(n.respaldoAuto), respaldoHora: n.respaldoHora, respaldoDestino: n.respaldoDestino, respaldoConservar: aNumero(n.respaldoConservar),
+          intentosAcceso: aNumero(n.intentosAcceso), minutosBloqueoAcceso: aNumero(n.minutosBloqueoAcceso),
         },
       });
       avisos.exito('La configuración se guardó.');
@@ -83,6 +86,15 @@ function SeccionNegocio({ f }) {
       <Tarjeta titulo="Semáforo de inventario" descripcion="Rojo al llegar al punto de reorden de cada producto. Aquí define cuándo se pone en amarillo.">
         <Entrada etiqueta="Avisar «stock medio» cuando falte este margen para el punto de reorden" sufijo="%" type="number" inputMode="numeric" min="0" max="400" step="5" value={n.porcentajeMedio} onChange={cambiar('porcentajeMedio')} className="max-w-xl" ayuda={`Ejemplo: con ${n.porcentajeMedio || 0} %, un producto con reorden en 20 lb se pone en amarillo al bajar de ${(20 * (1 + (aNumero(n.porcentajeMedio) ?? 0) / 100)).toFixed(0)} lb.`} />
       </Tarjeta>
+      <Tarjeta titulo="Seguridad del acceso" descripcion="Protege el sistema de quien intenta adivinar contraseñas.">
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Entrada etiqueta="Intentos de contraseña permitidos" type="number" inputMode="numeric" min="3" max="10" step="1" value={n.intentosAcceso} onChange={cambiar('intentosAcceso')} ayuda="Entre 3 y 10." required />
+          <Entrada etiqueta="Minutos de bloqueo" sufijo="min" type="number" inputMode="numeric" min="1" max="60" step="1" value={n.minutosBloqueoAcceso} onChange={cambiar('minutosBloqueoAcceso')} ayuda="Entre 1 y 60." required />
+        </div>
+        <Nota className="mt-5">
+          Tras {n.intentosAcceso || '…'} contraseñas incorrectas seguidas, ese usuario no podrá ingresar la contraseña desde ese dispositivo durante {n.minutosBloqueoAcceso || '…'} minuto(s). La pantalla de acceso muestra el tiempo que falta y el sistema le avisa al Dueño.
+        </Nota>
+      </Tarjeta>
       <BotonGuardar guardando={guardando} />
     </form>
   );
@@ -95,14 +107,14 @@ function SeccionCobro({ f }) {
       <Tarjeta titulo="Tipo de cambio" descripcion="Se usa cuando un cliente paga en dólares; el vuelto siempre se entrega en córdobas.">
         <Entrada etiqueta="Córdobas por cada dólar" prefijo="C$" type="text" inputMode="decimal" min="1" step="0.0001" value={n.tipoCambio} onChange={cambiar('tipoCambio')} className="max-w-xs" ayuda="Revise el tipo de cambio oficial del Banco Central y actualícelo cuando cambie." required />
       </Tarjeta>
-      <Tarjeta titulo="Cuenta bancaria para depósitos" descripcion="Con estos datos se arma el código QR que se le muestra al cliente en la Caja.">
+      <Tarjeta titulo="Cuenta bancaria para depósitos" descripcion="Estos datos se le muestran al cliente en la Caja cuando paga por depósito o transferencia.">
         <div className="grid gap-5 sm:grid-cols-2">
           <Entrada etiqueta="Banco" opcional value={n.banco} onChange={cambiar('banco')} maxLength={60} placeholder="Ejemplo: BAC, Banpro, Lafise" />
           <Entrada etiqueta="Cuenta a nombre de" opcional value={n.titularCuenta} onChange={cambiar('titularCuenta')} maxLength={100} />
           <Entrada etiqueta="Número de cuenta en córdobas" opcional value={n.cuentaNIO} onChange={cambiar('cuentaNIO')} maxLength={40} inputMode="numeric" />
           <Entrada etiqueta="Número de cuenta en dólares" opcional value={n.cuentaUSD} onChange={cambiar('cuentaUSD')} maxLength={40} inputMode="numeric" />
         </div>
-        <Nota className="mt-5">El sistema no se conecta con el banco: el QR solo muestra el número de cuenta y el monto. Confirme en su banca en línea que el depósito llegó antes de entregar el producto.</Nota>
+        <Nota className="mt-5">El sistema no se conecta con el banco: solo muestra el número de cuenta y el monto. Confirme en su banca en línea que el depósito llegó antes de entregar el producto.</Nota>
       </Tarjeta>
       <BotonGuardar guardando={guardando} />
     </form>

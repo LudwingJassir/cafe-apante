@@ -1,5 +1,4 @@
-import { Banknote, Check, CircleCheck, Lock, LockOpen, Minus, Plus, Printer, QrCode, Search, ShoppingBasket, Trash2, User, UserPlus } from 'lucide-react';
-import QRCode from 'qrcode';
+import { Banknote, Check, CircleCheck, Landmark, Lock, LockOpen, Minus, Plus, Printer, Search, ShoppingBasket, Trash2, User, UserPlus } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { calcularVenta, calcularVuelto, redondear } from '../../../shared/calculos.js';
@@ -106,53 +105,35 @@ function SelectorCliente({ abierto, alElegir, alCerrar }) {
   );
 }
 
-function QrDeposito({ negocio, moneda, monto }) {
+/** Datos de la cuenta para que el cliente haga el depósito o la transferencia. */
+function DatosDeposito({ negocio, moneda, monto }) {
   const cuenta = moneda === 'USD' ? negocio.cuentaUSD : negocio.cuentaNIO;
-  const [imagen, setImagen] = useState(null);
-  const contenido = useMemo(
-    () => [negocio.nombre, negocio.banco && `Banco: ${negocio.banco}`, negocio.titularCuenta && `Titular: ${negocio.titularCuenta}`, `Cuenta ${moneda === 'USD' ? 'US$' : 'C$'}: ${cuenta}`, `Monto: ${dinero(monto, moneda)}`].filter(Boolean).join('\n'),
-    [negocio, moneda, cuenta, monto],
-  );
-  useEffect(() => {
-    let vigente = true;
-    if (!cuenta) return undefined;
-    QRCode.toDataURL(contenido, { margin: 1, width: 360, color: { dark: '#261a14', light: '#ffffff' } })
-      .then((url) => vigente && setImagen(url))
-      .catch(() => vigente && setImagen(null));
-    return () => {
-      vigente = false;
-    };
-  }, [contenido, cuenta]);
-
   if (!cuenta) {
     return (
       <Nota tono="ambar" titulo={`Falta la cuenta en ${moneda === 'USD' ? 'dólares' : 'córdobas'}`}>
-        El Dueño / Administrador debe anotarla en <Link to="/configuracion" className="font-semibold underline">Configuración</Link> para que aparezca el código QR.
+        El Dueño / Administrador debe anotarla en <Link to="/configuracion" className="font-semibold underline">Configuración</Link> para mostrarla aquí.
       </Nota>
     );
   }
   return (
-    <div className="flex flex-col items-center gap-4 rounded-2xl border border-hueso-300 bg-white p-4 sm:flex-row sm:items-start">
-      {imagen ? <img src={imagen} alt="Código QR con los datos de la cuenta bancaria" className="size-44 shrink-0 rounded-lg" /> : <div className="size-44 shrink-0 animate-pulse rounded-lg bg-hueso-200" />}
-      <dl className="w-full space-y-1.5">
-        <div>
-          <dt className="text-sm text-cafe-500">Banco</dt>
-          <dd className="font-semibold">{negocio.banco || '—'}</dd>
-        </div>
-        <div>
-          <dt className="text-sm text-cafe-500">A nombre de</dt>
-          <dd className="font-semibold">{negocio.titularCuenta || negocio.nombre}</dd>
-        </div>
-        <div>
-          <dt className="text-sm text-cafe-500">Número de cuenta ({moneda === 'USD' ? 'dólares' : 'córdobas'})</dt>
-          <dd className="font-mono text-xl font-bold tracking-wide">{cuenta}</dd>
-        </div>
-        <div>
-          <dt className="text-sm text-cafe-500">Monto a depositar</dt>
-          <dd className="font-display text-2xl font-semibold">{dinero(monto, moneda)}</dd>
-        </div>
-      </dl>
-    </div>
+    <dl className="grid gap-3 rounded-2xl border border-hueso-300 bg-white p-4 sm:grid-cols-2">
+      <div>
+        <dt className="text-sm text-cafe-500">Banco</dt>
+        <dd className="font-semibold">{negocio.banco || '—'}</dd>
+      </div>
+      <div>
+        <dt className="text-sm text-cafe-500">A nombre de</dt>
+        <dd className="font-semibold">{negocio.titularCuenta || negocio.nombre}</dd>
+      </div>
+      <div className="sm:col-span-2">
+        <dt className="text-sm text-cafe-500">Número de cuenta ({moneda === 'USD' ? 'dólares' : 'córdobas'})</dt>
+        <dd className="break-all font-mono text-2xl font-bold tracking-wide">{cuenta}</dd>
+      </div>
+      <div className="sm:col-span-2">
+        <dt className="text-sm text-cafe-500">Monto a depositar</dt>
+        <dd className="font-display text-3xl font-semibold">{dinero(monto, moneda)}</dd>
+      </div>
+    </dl>
   );
 }
 
@@ -414,7 +395,7 @@ export default function Caja() {
                   }}
                   opciones={[
                     { valor: 'EFECTIVO', etiqueta: 'Efectivo', icono: Banknote },
-                    { valor: 'DEPOSITO', etiqueta: 'Depósito (QR)', icono: QrCode },
+                    { valor: 'DEPOSITO', etiqueta: 'Depósito bancario', icono: Landmark },
                   ]}
                 />
                 <Segmentado
@@ -455,7 +436,7 @@ export default function Caja() {
                   </>
                 ) : (
                   <>
-                    <QrDeposito negocio={negocio} moneda={moneda} monto={moneda === 'USD' ? enDolares : calculo.totalCobrar} />
+                    <DatosDeposito negocio={negocio} moneda={moneda} monto={moneda === 'USD' ? enDolares : calculo.totalCobrar} />
                     <Entrada etiqueta="Número de referencia del depósito" value={referencia} onChange={(e) => setReferencia(e.target.value)} maxLength={40} ayuda="Cópielo del comprobante del cliente y confirme que el depósito llegó antes de entregar el producto." />
                   </>
                 )}
